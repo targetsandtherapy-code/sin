@@ -53,7 +53,7 @@
                 <th>来源</th>
                 <th>状态</th>
                 <th>创建时间</th>
-                <th style="width:80px;">操作</th>
+                <th style="width:110px;">操作</th>
             </tr></thead>
             <tbody>
             {% for lead in leads %}
@@ -77,6 +77,7 @@
                 <td style="color:#94a3b8;">{{ lead.created_at.strftime('%m-%d %H:%M') if lead.created_at else '-' }}</td>
                 <td>
                     <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary btn-sm" title="推送" onclick="pushOne({{ lead.id }})"><i class="bi bi-send"></i></button>
                         <a href="/leads/{{ lead.id }}/edit" class="btn btn-outline-secondary btn-sm" title="编辑"><i class="bi bi-pencil"></i></a>
                         <button class="btn btn-outline-danger btn-sm" title="删除" onclick="deleteLead({{ lead.id }})"><i class="bi bi-trash"></i></button>
                     </div>
@@ -204,6 +205,25 @@ async function confirmPush() {
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-send me-1"></i>确认推送';
     }
+}
+
+function pushOne(id) {
+    const env = getCurrentEnv();
+    const envName = env === 'prod' ? '正式环境' : '测试环境';
+    if (!confirm(`确定将该线索推送到【${envName}】？`)) return;
+
+    fetch('/api/push', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ids: [id], env: env})
+    }).then(r => r.json()).then(d => {
+        if (d.success) {
+            alert(`推送完成：成功 ${d.success_count} 条，失败 ${d.fail_count} 条`);
+            location.reload();
+        } else {
+            alert('推送失败：' + d.message);
+        }
+    }).catch(e => alert('请求失败：' + e.message));
 }
 
 function deleteLead(id) {
