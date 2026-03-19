@@ -557,6 +557,44 @@ def api_delete_car_model(mid: int):
 
 # ─── API 接口 ───
 
+@app.get("/api/dealers")
+def api_dealers_list(q: str = Query(default="")):
+    with get_db() as db:
+        query = db.query(Dealer)
+        if q:
+            query = query.filter(
+                (Dealer.name.contains(q)) | (Dealer.short_name.contains(q)) |
+                (Dealer.erp_code.contains(q)) | (Dealer.city.contains(q))
+            )
+        dealers = query.order_by(Dealer.province, Dealer.city).limit(50).all()
+        return [{"value": d.erp_code, "text": f"{d.short_name} ({d.erp_code}) - {d.province}{d.city}"}
+                for d in dealers]
+
+
+@app.get("/api/car-models-list")
+def api_car_models_list():
+    with get_db() as db:
+        models = db.query(CarModel).order_by(CarModel.category, CarModel.code).all()
+        return [{"value": m.code, "text": f"{m.name} ({m.code})", "name": m.name} for m in models]
+
+
+@app.get("/api/provinces")
+def api_provinces():
+    with get_db() as db:
+        provinces = [r[0] for r in db.query(Dealer.province).distinct().order_by(Dealer.province).all() if r[0]]
+        return provinces
+
+
+@app.get("/api/cities")
+def api_cities(province: str = Query(default="")):
+    with get_db() as db:
+        query = db.query(Dealer.city).distinct()
+        if province:
+            query = query.filter(Dealer.province == province)
+        cities = [r[0] for r in query.order_by(Dealer.city).all() if r[0]]
+        return cities
+
+
 @app.delete("/api/leads/{lid}")
 async def api_delete_lead(request: Request, lid: int):
     operator = get_operator(request)

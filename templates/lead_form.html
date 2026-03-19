@@ -2,6 +2,16 @@
 {% block title %}{{ '编辑' if lead else '新增' }}线索{% endblock %}
 {% block page_title %}{{ '编辑' if lead else '新增' }}线索{% endblock %}
 
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<style>
+    .ts-wrapper .ts-control { font-size: 14px; min-height: 34px; }
+    .ts-dropdown { font-size: 14px; }
+    .ts-dropdown .option { padding: 8px 12px; }
+    .ts-dropdown .active { background: #2563eb; color: #fff; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-md-8">
@@ -11,17 +21,17 @@
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
                         <label class="form-label">线索ID <span class="text-danger">*</span></label>
-                        <input type="text" name="lead_id" class="form-control form-control-sm" 
+                        <input type="text" name="lead_id" class="form-control form-control-sm"
                                value="{{ lead.lead_id if lead else '' }}" placeholder="渠道原始线索ID" required>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">姓名</label>
-                        <input type="text" name="name" class="form-control form-control-sm" 
+                        <input type="text" name="name" class="form-control form-control-sm"
                                value="{{ lead.name if lead else '' }}" placeholder="客户姓名">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">手机号码 <span class="text-danger">*</span></label>
-                        <input type="text" name="tel_phone" class="form-control form-control-sm" 
+                        <input type="text" name="tel_phone" class="form-control form-control-sm"
                                value="{{ lead.tel_phone if lead else '' }}" placeholder="11位手机号" required>
                     </div>
                     <div class="col-md-4">
@@ -34,7 +44,7 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">线索创建时间</label>
-                        <input type="text" name="create_time" class="form-control form-control-sm" 
+                        <input type="text" name="create_time" class="form-control form-control-sm"
                                value="{{ lead.create_time if lead else '' }}" placeholder="yyyy-MM-dd HH:mm:ss">
                     </div>
                 </div>
@@ -43,17 +53,25 @@
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
                         <label class="form-label">省份</label>
-                        <input type="text" name="province_name" class="form-control form-control-sm" 
-                               value="{{ lead.province_name if lead else '' }}" placeholder="如：安徽省">
+                        <select id="sel_province" name="province_name" placeholder="搜索省份...">
+                            <option value="">不选</option>
+                            {% if lead and lead.province_name %}
+                            <option value="{{ lead.province_name }}" selected>{{ lead.province_name }}</option>
+                            {% endif %}
+                        </select>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">城市</label>
-                        <input type="text" name="city_name" class="form-control form-control-sm" 
-                               value="{{ lead.city_name if lead else '' }}" placeholder="如：芜湖市">
+                        <select id="sel_city" name="city_name" placeholder="搜索城市...">
+                            <option value="">不选</option>
+                            {% if lead and lead.city_name %}
+                            <option value="{{ lead.city_name }}" selected>{{ lead.city_name }}</option>
+                            {% endif %}
+                        </select>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">区县</label>
-                        <input type="text" name="county_name" class="form-control form-control-sm" 
+                        <input type="text" name="county_name" class="form-control form-control-sm"
                                value="{{ lead.county_name if lead else '' }}" placeholder="如：镜湖区">
                     </div>
                 </div>
@@ -62,37 +80,41 @@
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
                         <label class="form-label">一级来源 (source1) <span class="text-danger">*</span></label>
-                        <input type="text" name="source1" class="form-control form-control-sm" 
+                        <input type="text" name="source1" class="form-control form-control-sm"
                                value="{{ lead.source1 if lead else 'A13' }}" required>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">二级来源 (source2) <span class="text-danger">*</span></label>
-                        <input type="text" name="source2" class="form-control form-control-sm" 
+                        <input type="text" name="source2" class="form-control form-control-sm"
                                value="{{ lead.source2 if lead else 'A1304' }}" required>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">三级来源 (source3)</label>
-                        <input type="text" name="source3" class="form-control form-control-sm" 
+                        <input type="text" name="source3" class="form-control form-control-sm"
                                value="{{ lead.source3 if lead else 'A130403' }}">
                     </div>
                 </div>
 
                 <h6 class="fw-bold mb-3"><i class="bi bi-car-front me-2"></i>车型 / 经销商</h6>
                 <div class="row g-3 mb-4">
-                    <div class="col-md-4">
-                        <label class="form-label">经销商ERP (dealerId)</label>
-                        <input type="text" name="dealer_id" class="form-control form-control-sm" 
-                               value="{{ lead.dealer_id if lead else '' }}" placeholder="如：10145">
+                    <div class="col-md-6">
+                        <label class="form-label">经销商</label>
+                        <select id="sel_dealer" name="dealer_id" placeholder="搜索经销商名称/ERP码...">
+                            <option value="">不选</option>
+                            {% if lead and lead.dealer_id %}
+                            <option value="{{ lead.dealer_id }}" selected>{{ lead.dealer_id }}</option>
+                            {% endif %}
+                        </select>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">车系代码 (seriesId)</label>
-                        <input type="text" name="series_id" class="form-control form-control-sm" 
-                               value="{{ lead.series_id if lead else '' }}" placeholder="如：QR76">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">车系名称 (seriesName)</label>
-                        <input type="text" name="series_name" class="form-control form-control-sm" 
-                               value="{{ lead.series_name if lead else '' }}" placeholder="如：2025款艾瑞泽8">
+                    <div class="col-md-6">
+                        <label class="form-label">车型</label>
+                        <select id="sel_model" name="series_id" placeholder="搜索车型名称/代码...">
+                            <option value="">不选</option>
+                            {% if lead and lead.series_id %}
+                            <option value="{{ lead.series_id }}" selected>{{ lead.series_id }} - {{ lead.series_name }}</option>
+                            {% endif %}
+                        </select>
+                        <input type="hidden" id="series_name_hidden" name="series_name" value="{{ lead.series_name if lead else '' }}">
                     </div>
                 </div>
 
@@ -108,13 +130,67 @@
     <div class="col-md-4">
         <div class="card-panel">
             <h6 class="fw-bold mb-3">字段说明</h6>
-            <div style="font-size:12px;color:#64748b;line-height:2;">
+            <div style="font-size:13px;color:#64748b;line-height:2;">
                 <p><strong>线索ID</strong>：渠道原始ID，不可重复</p>
                 <p><strong>source1/2/3</strong>：来源编码，默认 A13/A1304/A130403</p>
-                <p><strong>dealerId</strong>：经销商整车ERP号，留空则通过省市县分配</p>
-                <p><strong>seriesId</strong>：车型配置表中的代码，如 QR76</p>
+                <p><strong>经销商</strong>：搜索名称或ERP码选择</p>
+                <p><strong>车型</strong>：搜索名称或代码选择</p>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script>
+new TomSelect('#sel_province', {
+    valueField: 'value', labelField: 'text', searchField: 'text',
+    load: function(query, callback) {
+        fetch('/api/provinces').then(r=>r.json()).then(data => {
+            callback(data.map(p => ({value: p, text: p})));
+        });
+    },
+    onChange: function(val) {
+        const cityCtrl = citySelect;
+        cityCtrl.clear();
+        cityCtrl.clearOptions();
+        if (val) {
+            fetch('/api/cities?province=' + encodeURIComponent(val)).then(r=>r.json()).then(data => {
+                data.forEach(c => cityCtrl.addOption({value: c, text: c}));
+            });
+        }
+    }
+});
+
+const citySelect = new TomSelect('#sel_city', {
+    valueField: 'value', labelField: 'text', searchField: 'text',
+    load: function(query, callback) {
+        const prov = document.querySelector('[name=province_name]').value;
+        const url = prov ? '/api/cities?province=' + encodeURIComponent(prov) : '/api/cities';
+        fetch(url).then(r=>r.json()).then(data => {
+            callback(data.map(c => ({value: c, text: c})));
+        });
+    }
+});
+
+new TomSelect('#sel_dealer', {
+    valueField: 'value', labelField: 'text', searchField: 'text',
+    load: function(query, callback) {
+        if (!query.length) return callback();
+        fetch('/api/dealers?q=' + encodeURIComponent(query)).then(r=>r.json()).then(callback);
+    }
+});
+
+const modelSelect = new TomSelect('#sel_model', {
+    valueField: 'value', labelField: 'text', searchField: 'text',
+    load: function(query, callback) {
+        fetch('/api/car-models-list').then(r=>r.json()).then(callback);
+    },
+    onChange: function(val) {
+        const opt = this.options[val];
+        document.getElementById('series_name_hidden').value = opt ? opt.name : '';
+    }
+});
+</script>
 {% endblock %}
