@@ -114,18 +114,21 @@ def log_action(db, lead_id, action, operator, field_name="", old_value="", new_v
 
 
 def log_lead_changes(db, lead, new_data, operator):
-    """比较并记录字段变更"""
+    """比较并记录字段变更，返回变更数量"""
     field_map = {
         "lead_id": "线索ID", "name": "姓名", "tel_phone": "电话", "gender": "性别",
         "create_time": "创建时间", "source1": "source1", "source2": "source2", "source3": "source3",
         "dealer_id": "经销商", "series_id": "车系代码", "series_name": "车系名称",
         "province_name": "省份", "city_name": "城市", "county_name": "区县",
     }
+    count = 0
     for attr, label in field_map.items():
         old_val = getattr(lead, attr, "") or ""
         new_val = new_data.get(attr, "") or ""
         if str(old_val) != str(new_val):
             log_action(db, lead.lead_id, "edit", operator, label, old_val, new_val)
+            count += 1
+    return count
 
 
 # ─── 健康检查 ───
@@ -303,7 +306,9 @@ def lead_edit(request: Request, lid: int,
         if not lead:
             flash(request, "线索不存在", "error")
             return RedirectResponse("/leads", status_code=303)
-        log_lead_changes(db, lead, new_data, operator)
+        changes = log_lead_changes(db, lead, new_data, operator)
+        if not changes:
+            log_action(db, lead.lead_id, "edit", operator, "保存线索", "", "无字段变更")
         for k, v in new_data.items():
             setattr(lead, k, v)
         lead.updated_by = operator
