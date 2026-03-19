@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from database import init_db, SessionLocal, Lead, PushLog, User, LeadHistory
+from database import init_db, SessionLocal, Lead, PushLog, User, LeadHistory, Dealer, CarModel
 
 app = FastAPI(title="SCRM 线索管理系统")
 app.add_middleware(SessionMiddleware, secret_key="scrm-leads-secret-key-2026")
@@ -33,6 +33,19 @@ with SessionLocal() as db:
         admin = User(username="admin", display_name="超级管理员", role="admin")
         admin.set_password("admin123")
         db.add(admin)
+        db.commit()
+
+# ─── 初始化经销商和车型数据 ───
+
+DATA_FILE = os.path.join(os.path.dirname(__file__), "init_data.json")
+with SessionLocal() as db:
+    if db.query(Dealer).count() == 0 and os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        for d in data.get("dealers", []):
+            db.add(Dealer(**d))
+        for m in data.get("models", []):
+            db.add(CarModel(**m))
         db.commit()
 
 # ─── 配置 ───
@@ -381,6 +394,165 @@ def admin_users_page(request: Request):
     with get_db() as db:
         users = db.query(User).order_by(User.created_at.desc()).all()
     return tpl(request, "admin_users.html", "admin_users", users=users)
+
+
+# ─── 经销商管理 ───
+
+@app.get("/dealers", response_class=HTMLResponse)
+def dealers_page(request: Request,
+                 q: str = Query(default=None),
+                 province: str = Query(default=None),
+                 page: int = Query(default=1)):
+    r = require_login(request)
+    if r: return r
+    per_page = 30
+    with get_db() as db:
+        query = db.query(Dealer)
+        if q:
+            query = query.filter((Dealer.name.contains(q)) | (Dealer.erp_code.contains(q)) | (Dealer.short_name.contains(q)))
+        if province:
+            query = query.filter(Dealer.province == province)
+        total = query.count()
+        total_pages = max(1, (total + per_page - 1) // per_page)
+        dealers = query.order_by(Dealer.province, Dealer.city).offset((page - 1) * per_page).limit(per_page).all()
+        provinces = [r[0] for r in db.query(Dealer.province).distinct().order_by(Dealer.province).all()]
+    return tpl(request, "dealers.html", "dealers",
+               dealers=dealers, total=total, current_page=page, total_pages=total_pages,
+               q=q, province_filter=province, provinces=provinces)
+
+
+@app.get("/dealers/add", response_class=HTMLResponse)
+def dealer_add_page(request: Request):
+    r = require_login(request)
+    if r: return r
+    return tpl(request, "dealer_form.html", "dealers", dealer=None)
+
+
+@app.post("/dealers/add")
+def dealer_add(request: Request,
+               network: str = Form(default=""), region: str = Form(default=""),
+               province: str = Form(default=""), city: str = Form(default=""),
+               erp_code: str = Form(...), name: str = Form(default=""),
+               short_name: str = Form(default="")):
+    with get_db() as db:
+        if db.query(Dealer).filter(Dealer.erp_code == erp_code).first():
+            flash(request, f"ERP码 {erp_code} 已存在", "error")
+            return RedirectResponse("/dealers/add", status_code=303)
+        db.add(Dealer(network=network, region=region, province=province, city=city,
+                      erp_code=erp_code, name=name, short_name=short_name))
+        db.commit()
+    flash(request, "经销商添加成功", "success")
+    return RedirectResponse("/dealers", status_code=303)
+
+
+@app.get("/dealers/{did}/edit", response_class=HTMLResponse)
+def dealer_edit_page(request: Request, did: int):
+    r = require_login(request)
+    if r: return r
+    with get_db() as db:
+        dealer = db.query(Dealer).filter(Dealer.id == did).first()
+    return tpl(request, "dealer_form.html", "dealers", dealer=dealer)
+
+
+@app.post("/dealers/{did}/edit")
+def dealer_edit(request: Request, did: int,
+                network: str = Form(default=""), region: str = Form(default=""),
+                province: str = Form(default=""), city: str = Form(default=""),
+                erp_code: str = Form(...), name: str = Form(default=""),
+                short_name: str = Form(default="")):
+    with get_db() as db:
+        dealer = db.query(Dealer).filter(Dealer.id == did).first()
+        if not dealer:
+            flash(request, "经销商不存在", "error")
+            return RedirectResponse("/dealers", status_code=303)
+        dealer.network = network
+        dealer.region = region
+        dealer.province = province
+        dealer.city = city
+        dealer.erp_code = erp_code
+        dealer.name = name
+        dealer.short_name = short_name
+        db.commit()
+    flash(request, "经销商已更新", "success")
+    return RedirectResponse("/dealers", status_code=303)
+
+
+@app.delete("/api/dealers/{did}")
+def api_delete_dealer(did: int):
+    with get_db() as db:
+        dealer = db.query(Dealer).filter(Dealer.id == did).first()
+        if dealer:
+            db.delete(dealer)
+            db.commit()
+            return {"success": True}
+    return {"success": False, "message": "不存在"}
+
+
+# ─── 车型管理 ───
+
+@app.get("/car-models", response_class=HTMLResponse)
+def car_models_page(request: Request):
+    r = require_login(request)
+    if r: return r
+    with get_db() as db:
+        models = db.query(CarModel).order_by(CarModel.category, CarModel.code).all()
+    return tpl(request, "car_models.html", "car_models", models=models)
+
+
+@app.get("/car-models/add", response_class=HTMLResponse)
+def car_model_add_page(request: Request):
+    r = require_login(request)
+    if r: return r
+    return tpl(request, "car_model_form.html", "car_models", model=None)
+
+
+@app.post("/car-models/add")
+def car_model_add(request: Request,
+                  category: str = Form(default=""), code: str = Form(...), name: str = Form(default="")):
+    with get_db() as db:
+        if db.query(CarModel).filter(CarModel.code == code).first():
+            flash(request, f"车型代码 {code} 已存在", "error")
+            return RedirectResponse("/car-models/add", status_code=303)
+        db.add(CarModel(category=category, code=code, name=name))
+        db.commit()
+    flash(request, "车型添加成功", "success")
+    return RedirectResponse("/car-models", status_code=303)
+
+
+@app.get("/car-models/{mid}/edit", response_class=HTMLResponse)
+def car_model_edit_page(request: Request, mid: int):
+    r = require_login(request)
+    if r: return r
+    with get_db() as db:
+        model = db.query(CarModel).filter(CarModel.id == mid).first()
+    return tpl(request, "car_model_form.html", "car_models", model=model)
+
+
+@app.post("/car-models/{mid}/edit")
+def car_model_edit(request: Request, mid: int,
+                   category: str = Form(default=""), code: str = Form(...), name: str = Form(default="")):
+    with get_db() as db:
+        model = db.query(CarModel).filter(CarModel.id == mid).first()
+        if not model:
+            flash(request, "车型不存在", "error")
+            return RedirectResponse("/car-models", status_code=303)
+        model.category = category
+        model.code = code
+        model.name = name
+        db.commit()
+    flash(request, "车型已更新", "success")
+    return RedirectResponse("/car-models", status_code=303)
+
+
+@app.delete("/api/car-models/{mid}")
+def api_delete_car_model(mid: int):
+    with get_db() as db:
+        model = db.query(CarModel).filter(CarModel.id == mid).first()
+        if model:
+            db.delete(model)
+            db.commit()
+            return {"success": True}
+    return {"success": False, "message": "不存在"}
 
 
 # ─── API 接口 ───

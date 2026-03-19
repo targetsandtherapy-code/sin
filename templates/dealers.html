@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}经销商管理{% endblock %}
+{% block page_title %}经销商管理{% endblock %}
+{% block top_actions %}
+<a href="/dealers/add" class="btn btn-sm btn-push"><i class="bi bi-plus me-1"></i>新增经销商</a>
+{% endblock %}
+
+{% block content %}
+<div class="card-panel mb-4">
+    <form method="get" action="/dealers" class="row g-2 align-items-end">
+        <div class="col-auto">
+            <input type="text" name="q" class="form-control form-control-sm" placeholder="名称/ERP码搜索" value="{{ q or '' }}" style="width:200px;">
+        </div>
+        <div class="col-auto">
+            <select name="province" class="form-select form-select-sm" style="width:140px;">
+                <option value="">全部省份</option>
+                {% for p in provinces %}
+                <option value="{{ p }}" {{ 'selected' if province_filter == p }}>{{ p }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search me-1"></i>搜索</button>
+            <a href="/dealers" class="btn btn-sm btn-outline-secondary ms-1">重置</a>
+        </div>
+        <div class="col-auto ms-auto" style="color:#94a3b8;">共 {{ total }} 条</div>
+    </form>
+</div>
+
+<div class="card-panel">
+    {% if dealers %}
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead><tr>
+                <th>序列</th><th>大区</th><th>省份</th><th>城市</th><th>整车ERP</th><th>经销商名称</th><th>简称</th><th style="width:80px;">操作</th>
+            </tr></thead>
+            <tbody>
+            {% for d in dealers %}
+            <tr>
+                <td>{{ d.network }}</td>
+                <td>{{ d.region }}</td>
+                <td>{{ d.province }}</td>
+                <td>{{ d.city }}</td>
+                <td><code>{{ d.erp_code }}</code></td>
+                <td>{{ d.name }}</td>
+                <td>{{ d.short_name }}</td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <a href="/dealers/{{ d.id }}/edit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i></a>
+                        <button class="btn btn-outline-danger btn-sm" onclick="if(confirm('确定删除？'))fetch('/api/dealers/{{ d.id }}',{method:'DELETE'}).then(()=>location.reload())"><i class="bi bi-trash"></i></button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if total_pages > 1 %}
+    <div class="d-flex justify-content-end mt-3">
+        <nav><ul class="pagination pagination-sm mb-0">
+            {% for p in range(1, total_pages + 1) %}
+            <li class="page-item {{ 'active' if p == current_page }}">
+                <a class="page-link" href="?page={{ p }}&q={{ q or '' }}&province={{ province_filter or '' }}">{{ p }}</a>
+            </li>
+            {% endfor %}
+        </ul></nav>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="empty-state"><i class="bi bi-building"></i><p>暂无经销商数据</p></div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -104,6 +104,28 @@ class PushLog(Base):
     pushed_at = Column(DateTime, default=datetime.now)
 
 
+class Dealer(Base):
+    __tablename__ = "dealers"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    network = Column(String(16), default="")
+    region = Column(String(32), default="")
+    province = Column(String(32), default="", index=True)
+    city = Column(String(32), default="", index=True)
+    erp_code = Column(String(32), unique=True, index=True)
+    name = Column(String(128), default="")
+    short_name = Column(String(64), default="")
+
+
+class CarModel(Base):
+    __tablename__ = "car_models"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    category = Column(String(32), default="")
+    code = Column(String(32), unique=True, index=True)
+    name = Column(String(64), default="")
+
+
 class LeadHistory(Base):
     __tablename__ = "lead_history"
 

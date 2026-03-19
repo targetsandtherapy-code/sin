@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑' if model else '新增' }}车型{% endblock %}
+{% block page_title %}{{ '编辑' if model else '新增' }}车型{% endblock %}
+
+{% block content %}
+<div class="row"><div class="col-md-6">
+<div class="card-panel">
+    <form method="post" action="{{ '/car-models/' ~ model.id ~ '/edit' if model else '/car-models/add' }}">
+        <div class="row g-3">
+            <div class="col-md-12">
+                <label class="form-label">分类</label>
+                <input type="text" name="category" class="form-control form-control-sm" value="{{ model.category if model else '' }}" placeholder="如 奇瑞车型、风云车型、QQ车系">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">代码 <span class="text-danger">*</span></label>
+                <input type="text" name="code" class="form-control form-control-sm" value="{{ model.code if model else '' }}" required placeholder="如 QR76">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">车型名称</label>
+                <input type="text" name="name" class="form-control form-control-sm" value="{{ model.name if model else '' }}" placeholder="如 2025款艾瑞泽8">
+            </div>
+        </div>
+        <hr>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-push"><i class="bi bi-check2 me-1"></i>{{ '保存' if model else '添加' }}</button>
+            <a href="/car-models" class="btn btn-outline-secondary">取消</a>
+        </div>
+    </form>
+</div>
+</div></div>
+{% endblock %}

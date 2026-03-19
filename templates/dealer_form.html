@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑' if dealer else '新增' }}经销商{% endblock %}
+{% block page_title %}{{ '编辑' if dealer else '新增' }}经销商{% endblock %}
+
+{% block content %}
+<div class="row"><div class="col-md-8">
+<div class="card-panel">
+    <form method="post" action="{{ '/dealers/' ~ dealer.id ~ '/edit' if dealer else '/dealers/add' }}">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">序列（网络）</label>
+                <input type="text" name="network" class="form-control form-control-sm" value="{{ dealer.network if dealer else '' }}" placeholder="如 C网">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">大区</label>
+                <input type="text" name="region" class="form-control form-control-sm" value="{{ dealer.region if dealer else '' }}" placeholder="如 皖赣大区">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">省份</label>
+                <input type="text" name="province" class="form-control form-control-sm" value="{{ dealer.province if dealer else '' }}" placeholder="如 安徽">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">城市</label>
+                <input type="text" name="city" class="form-control form-control-sm" value="{{ dealer.city if dealer else '' }}" placeholder="如 芜湖">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">整车ERP <span class="text-danger">*</span></label>
+                <input type="text" name="erp_code" class="form-control form-control-sm" value="{{ dealer.erp_code if dealer else '' }}" required placeholder="如 10145">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">经销商名称</label>
+                <input type="text" name="name" class="form-control form-control-sm" value="{{ dealer.name if dealer else '' }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">简称</label>
+                <input type="text" name="short_name" class="form-control form-control-sm" value="{{ dealer.short_name if dealer else '' }}">
+            </div>
+        </div>
+        <hr>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-push"><i class="bi bi-check2 me-1"></i>{{ '保存' if dealer else '添加' }}</button>
+            <a href="/dealers" class="btn btn-outline-secondary">取消</a>
+        </div>
+    </form>
+</div>
+</div></div>
+{% endblock %}
