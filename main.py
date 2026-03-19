@@ -320,32 +320,44 @@ async def webhook_kuaishou(request: Request):
     with get_db() as db:
         count = 0
         for item in leads_data:
-            lead_id = item.get("id") or item.get("lead_id") or item.get("ID", "")
-            phone = item.get("telPhone") or item.get("phone") or item.get("电话", "")
+            lead_id = (item.get("clue_id") or item.get("id")
+                       or item.get("lead_id") or item.get("ID") or "")
+            phone = (item.get("phone") or item.get("telPhone")
+                     or item.get("coupon_phone") or "")
 
             if not phone:
                 continue
 
-            existing = db.query(Lead).filter(Lead.lead_id == str(lead_id)).first() if lead_id else None
-            if existing:
-                continue
+            if lead_id:
+                existing = db.query(Lead).filter(Lead.lead_id == str(lead_id)).first()
+                if existing:
+                    continue
 
             if not lead_id:
                 lead_id = f"ks_{datetime.now().strftime('%Y%m%d%H%M%S')}_{random.randint(1000,9999)}"
 
+            name = (item.get("consumer_name") or item.get("name")
+                    or item.get("姓名") or "")
+            create_time = (item.get("create_time_date_time")
+                           or item.get("createTime") or item.get("create_time")
+                           or datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            province = (item.get("province_name") or item.get("provinceName")
+                        or item.get("intention_province_name") or "")
+            city = (item.get("city_name") or item.get("cityName")
+                    or item.get("intention_city_name") or "")
+
             lead = Lead(
                 lead_id=str(lead_id),
-                name=item.get("name") or item.get("姓名", ""),
+                name=name,
                 tel_phone=str(phone),
                 gender=str(item.get("gender", "0")),
-                create_time=item.get("createTime") or item.get("create_time")
-                            or datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                create_time=create_time,
                 source1=CONFIG["source1"],
                 source2=CONFIG["source2"],
                 source3=CONFIG["source3"],
-                province_name=item.get("provinceName") or item.get("province", ""),
-                city_name=item.get("cityName") or item.get("city", ""),
-                county_name=item.get("countyName") or item.get("county", ""),
+                province_name=province,
+                city_name=city,
+                county_name=item.get("countyName") or item.get("county_name") or "",
                 source_channel="快手",
             )
             db.add(lead)
