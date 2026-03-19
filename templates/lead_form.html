@@ -144,20 +144,25 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
-new TomSelect('#sel_province', {
+let provincesLoaded = false;
+const provSelect = new TomSelect('#sel_province', {
     valueField: 'value', labelField: 'text', searchField: 'text',
+    preload: true,
     load: function(query, callback) {
+        if (provincesLoaded) return callback();
         fetch('/api/provinces').then(r=>r.json()).then(data => {
+            provincesLoaded = true;
             callback(data.map(p => ({value: p, text: p})));
         });
     },
     onChange: function(val) {
-        const cityCtrl = citySelect;
-        cityCtrl.clear();
-        cityCtrl.clearOptions();
+        citySelect.clear();
+        citySelect.clearOptions();
+        citySelect.addOption({value: '', text: '不选'});
         if (val) {
             fetch('/api/cities?province=' + encodeURIComponent(val)).then(r=>r.json()).then(data => {
-                data.forEach(c => cityCtrl.addOption({value: c, text: c}));
+                data.forEach(c => citySelect.addOption({value: c, text: c}));
+                citySelect.refreshOptions(false);
             });
         }
     }
@@ -165,6 +170,7 @@ new TomSelect('#sel_province', {
 
 const citySelect = new TomSelect('#sel_city', {
     valueField: 'value', labelField: 'text', searchField: 'text',
+    preload: true,
     load: function(query, callback) {
         const prov = document.querySelector('[name=province_name]').value;
         const url = prov ? '/api/cities?province=' + encodeURIComponent(prov) : '/api/cities';
@@ -176,16 +182,22 @@ const citySelect = new TomSelect('#sel_city', {
 
 new TomSelect('#sel_dealer', {
     valueField: 'value', labelField: 'text', searchField: 'text',
+    preload: true,
     load: function(query, callback) {
-        if (!query.length) return callback();
-        fetch('/api/dealers?q=' + encodeURIComponent(query)).then(r=>r.json()).then(callback);
+        fetch('/api/dealers?q=' + encodeURIComponent(query || '')).then(r=>r.json()).then(callback);
     }
 });
 
+let modelsLoaded = false;
 const modelSelect = new TomSelect('#sel_model', {
     valueField: 'value', labelField: 'text', searchField: 'text',
+    preload: true,
     load: function(query, callback) {
-        fetch('/api/car-models-list').then(r=>r.json()).then(callback);
+        if (modelsLoaded) return callback();
+        fetch('/api/car-models-list').then(r=>r.json()).then(data => {
+            modelsLoaded = true;
+            callback(data);
+        });
     },
     onChange: function(val) {
         const opt = this.options[val];
