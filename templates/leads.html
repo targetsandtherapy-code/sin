@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}线索管理{% endblock %}
+{% block page_title %}线索管理{% endblock %}
+
+{% block top_actions %}
+<a href="/leads/add" class="btn btn-sm btn-push"><i class="bi bi-plus me-1"></i>新增线索</a>
+{% endblock %}
+
+{% block content %}
+<div class="card-panel mb-4">
+    <form method="get" action="/leads" class="row g-2 align-items-end">
+        <div class="col-auto">
+            <input type="text" name="q" class="form-control form-control-sm" placeholder="姓名/电话搜索" value="{{ q or '' }}" style="width:180px;">
+        </div>
+        <div class="col-auto">
+            <select name="status" class="form-select form-select-sm" style="width:130px;">
+                <option value="">全部状态</option>
+                <option value="pending" {{ 'selected' if status_filter == 'pending' }}>待推送</option>
+                <option value="success" {{ 'selected' if status_filter == 'success' }}>已推送</option>
+                <option value="fail" {{ 'selected' if status_filter == 'fail' }}>推送失败</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <select name="source" class="form-select form-select-sm" style="width:130px;">
+                <option value="">全部来源</option>
+                <option value="快手" {{ 'selected' if source_filter == '快手' }}>快手</option>
+                <option value="手动录入" {{ 'selected' if source_filter == '手动录入' }}>手动录入</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search me-1"></i>搜索</button>
+            <a href="/leads" class="btn btn-sm btn-outline-secondary ms-1">重置</a>
+        </div>
+        <div class="col-auto ms-auto">
+            <button type="button" id="btnPushSelected" class="btn btn-sm btn-push" disabled onclick="pushSelected()">
+                <i class="bi bi-send me-1"></i>推送选中 (<span id="selectedCount">0</span>)
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="card-panel">
+    {% if leads %}
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead><tr>
+                <th style="width:36px;"><input type="checkbox" id="checkAll" class="form-check-input"></th>
+                <th>姓名</th>
+                <th>电话</th>
+                <th>省/市/区</th>
+                <th>车型</th>
+                <th>经销商</th>
+                <th>来源</th>
+                <th>状态</th>
+                <th>创建时间</th>
+                <th style="width:80px;">操作</th>
+            </tr></thead>
+            <tbody>
+            {% for lead in leads %}
+            <tr>
+                <td><input type="checkbox" class="form-check-input lead-check" value="{{ lead.id }}" data-status="{{ lead.push_status }}"></td>
+                <td>{{ lead.name or '-' }}</td>
+                <td><code>{{ lead.tel_phone }}</code></td>
+                <td>{{ lead.province_name }} {{ lead.city_name }} {{ lead.county_name }}</td>
+                <td>{{ lead.series_name or '-' }}</td>
+                <td>{{ lead.dealer_id or '-' }}</td>
+                <td>{{ lead.source_channel or '手动录入' }}</td>
+                <td>
+                    {% if lead.push_status == 'success' %}
+                    <span class="badge badge-success">已推送</span>
+                    {% elif lead.push_status == 'fail' %}
+                    <span class="badge badge-fail" title="{{ lead.push_msg }}">失败</span>
+                    {% else %}
+                    <span class="badge badge-pending">待推送</span>
+                    {% endif %}
+                </td>
+                <td style="color:#94a3b8;font-size:12px;">{{ lead.created_at.strftime('%m-%d %H:%M') if lead.created_at else '-' }}</td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <a href="/leads/{{ lead.id }}/edit" class="btn btn-outline-secondary btn-sm" title="编辑"><i class="bi bi-pencil"></i></a>
+                        <button class="btn btn-outline-danger btn-sm" title="删除" onclick="deleteLead({{ lead.id }})"><i class="bi bi-trash"></i></button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="d-flex align-items-center justify-content-between mt-3" style="font-size:13px;color:#94a3b8;">
+        <span>共 {{ total }} 条线索</span>
+        {% if total_pages > 1 %}
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {{ 'active' if p == current_page }}">
+                    <a class="page-link" href="?page={{ p }}&q={{ q or '' }}&status={{ status_filter or '' }}&source={{ source_filter or '' }}">{{ p }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p>暂无线索</p>
+        <a href="/leads/add" class="btn btn-sm btn-push">新增线索</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 推送确认弹窗 -->
+<div class="modal fade" id="pushModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title fw-bold">确认推送</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>即将推送 <strong id="pushCount">0</strong> 条线索到奇瑞 SCRM</p>
+                <p style="font-size:13px;">当前环境：<strong id="pushEnvDisplay"></strong></p>
+                <div id="pushResult" class="mt-3" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-sm btn-push" id="confirmPush" onclick="confirmPush()">
+                    <i class="bi bi-send me-1"></i>确认推送
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const checkAll = document.getElementById('checkAll');
+const checks = document.querySelectorAll('.lead-check');
+const btnPush = document.getElementById('btnPushSelected');
+const countSpan = document.getElementById('selectedCount');
+
+function updateCount() {
+    const n = document.querySelectorAll('.lead-check:checked').length;
+    countSpan.textContent = n;
+    btnPush.disabled = n === 0;
+}
+
+checkAll.addEventListener('change', function() {
+    checks.forEach(c => c.checked = this.checked);
+    updateCount();
+});
+
+checks.forEach(c => c.addEventListener('change', updateCount));
+
+function getSelectedIds() {
+    return Array.from(document.querySelectorAll('.lead-check:checked')).map(c => parseInt(c.value));
+}
+
+function pushSelected() {
+    const ids = getSelectedIds();
+    if (ids.length === 0) return;
+    document.getElementById('pushCount').textContent = ids.length;
+    const env = getCurrentEnv();
+    const display = document.getElementById('pushEnvDisplay');
+    display.textContent = env === 'prod' ? '正式环境' : '测试环境';
+    display.style.color = env === 'prod' ? '#dc2626' : '#f59e0b';
+    document.getElementById('pushResult').style.display = 'none';
+    document.getElementById('confirmPush').disabled = false;
+    new bootstrap.Modal(document.getElementById('pushModal')).show();
+}
+
+async function confirmPush() {
+    const ids = getSelectedIds();
+    const env = getCurrentEnv();
+    const btn = document.getElementById('confirmPush');
+    const resultDiv = document.getElementById('pushResult');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>推送中...';
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<div class="text-muted">正在推送...</div>';
+
+    try {
+        const resp = await fetch('/api/push', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ids: ids, env: env})
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+            resultDiv.innerHTML = `<div class="alert alert-success mb-0 py-2" style="font-size:13px;">
+                推送完成：成功 ${data.success_count} 条，失败 ${data.fail_count} 条
+            </div>`;
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            resultDiv.innerHTML = `<div class="alert alert-danger mb-0 py-2" style="font-size:13px;">${data.message}</div>`;
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-send me-1"></i>确认推送';
+        }
+    } catch(e) {
+        resultDiv.innerHTML = `<div class="alert alert-danger mb-0 py-2" style="font-size:13px;">请求失败: ${e.message}</div>`;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-send me-1"></i>确认推送';
+    }
+}
+
+function deleteLead(id) {
+    if (!confirm('确定删除该线索？')) return;
+    fetch(`/api/leads/${id}`, {method: 'DELETE'}).then(r => r.json()).then(d => {
+        if (d.success) location.reload();
+        else alert(d.message);
+    });
+}
+</script>
+{% endblock %}

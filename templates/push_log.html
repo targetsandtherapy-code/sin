@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}推送记录{% endblock %}
+{% block page_title %}推送记录{% endblock %}
+
+{% block content %}
+<div class="card-panel">
+    {% if logs %}
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead><tr>
+                <th>#</th>
+                <th>线索ID</th>
+                <th>姓名</th>
+                <th>电话</th>
+                <th>环境</th>
+                <th>结果码</th>
+                <th>消息</th>
+                <th>推送时间</th>
+            </tr></thead>
+            <tbody>
+            {% for log in logs %}
+            <tr>
+                <td style="color:#94a3b8;">{{ log.id }}</td>
+                <td><code style="font-size:11px;">{{ log.lead_id }}</code></td>
+                <td>{{ log.name or '-' }}</td>
+                <td><code>{{ log.tel_phone }}</code></td>
+                <td>
+                    {% if log.environment == '正式环境' %}
+                    <span class="badge bg-danger">正式</span>
+                    {% else %}
+                    <span class="badge bg-info">测试</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if log.result_code == '0' %}
+                    <span class="badge badge-success">成功</span>
+                    {% else %}
+                    <span class="badge badge-fail">{{ log.result_code }}</span>
+                    {% endif %}
+                </td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ log.result_msg }}">
+                    {{ log.result_msg }}
+                </td>
+                <td style="color:#94a3b8;font-size:12px;">{{ log.pushed_at.strftime('%Y-%m-%d %H:%M:%S') if log.pushed_at else '-' }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="mt-3" style="font-size:13px;color:#94a3b8;">共 {{ logs|length }} 条记录</div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-clock-history"></i>
+        <p>暂无推送记录</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

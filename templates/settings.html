@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}系统设置{% endblock %}
+{% block page_title %}系统设置{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card-panel">
+            <h6 class="fw-bold mb-3"><i class="bi bi-cloud-upload me-2"></i>奇瑞 SCRM 推送配置</h6>
+            <form method="post" action="/settings">
+                <div class="mb-3">
+                    <label class="form-label">AppId</label>
+                    <input type="text" name="app_id" class="form-control form-control-sm" value="{{ config.app_id }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">AppSecret</label>
+                    <input type="text" name="app_secret" class="form-control form-control-sm" value="{{ config.app_secret }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">默认来源编码</label>
+                    <div class="row g-2">
+                        <div class="col">
+                            <input type="text" name="source1" class="form-control form-control-sm" value="{{ config.source1 }}" placeholder="source1">
+                        </div>
+                        <div class="col">
+                            <input type="text" name="source2" class="form-control form-control-sm" value="{{ config.source2 }}" placeholder="source2">
+                        </div>
+                        <div class="col">
+                            <input type="text" name="source3" class="form-control form-control-sm" value="{{ config.source3 }}" placeholder="source3">
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-push btn-sm"><i class="bi bi-check2 me-1"></i>保存配置</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card-panel">
+            <h6 class="fw-bold mb-3"><i class="bi bi-link-45deg me-2"></i>快手 Webhook 接收地址</h6>
+            <p style="font-size:13px;color:#64748b;">将以下地址配置到快手线索CRM的推送规则中：</p>
+            <div class="input-group input-group-sm mb-3">
+                <input type="text" class="form-control" id="webhookUrl" value="{{ webhook_url }}" readonly>
+                <button class="btn btn-outline-secondary" onclick="copyUrl()"><i class="bi bi-clipboard"></i></button>
+            </div>
+            <div style="font-size:12px;color:#94a3b8;">
+                <p>请求方式: POST</p>
+                <p>Content-Type: application/json</p>
+            </div>
+        </div>
+
+        <div class="card-panel mt-4">
+            <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2"></i>环境地址</h6>
+            <div style="font-size:12px;">
+                <p><strong>测试环境：</strong><br><code>https://scrm-gf-api-uat.mychery.com/api/app/chery-clue</code></p>
+                <p><strong>正式环境：</strong><br><code>https://scrm-gf-api.mychery.com/api/app/chery-clue</code></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyUrl() {
+    const input = document.getElementById('webhookUrl');
+    navigator.clipboard.writeText(input.value);
+    alert('已复制到剪贴板');
+}
+</script>
+{% endblock %}

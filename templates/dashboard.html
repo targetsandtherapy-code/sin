@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}仪表盘{% endblock %}
+{% block page_title %}仪表盘{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="stat-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-people"></i></div>
+            </div>
+            <div class="stat-value">{{ stats.total }}</div>
+            <div class="stat-label">总线索数</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="stat-icon" style="background:#fef9c3;color:#a16207;"><i class="bi bi-hourglass-split"></i></div>
+            </div>
+            <div class="stat-value">{{ stats.pending }}</div>
+            <div class="stat-label">待推送</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="stat-icon" style="background:#d1fae5;color:#059669;"><i class="bi bi-check-circle"></i></div>
+            </div>
+            <div class="stat-value">{{ stats.success }}</div>
+            <div class="stat-label">推送成功</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="stat-icon" style="background:#fee2e2;color:#dc2626;"><i class="bi bi-x-circle"></i></div>
+            </div>
+            <div class="stat-value">{{ stats.fail }}</div>
+            <div class="stat-label">推送失败</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-8">
+        <div class="card-panel">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="mb-0 fw-bold">最近线索</h6>
+                <a href="/leads" class="text-decoration-none" style="font-size:13px;">查看全部 →</a>
+            </div>
+            {% if recent_leads %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr>
+                        <th>姓名</th><th>电话</th><th>城市</th><th>来源</th><th>状态</th><th>时间</th>
+                    </tr></thead>
+                    <tbody>
+                    {% for lead in recent_leads %}
+                    <tr>
+                        <td>{{ lead.name or '-' }}</td>
+                        <td>{{ lead.tel_phone }}</td>
+                        <td>{{ lead.province_name }}{{ lead.city_name }}</td>
+                        <td>{{ lead.source_channel or '手动录入' }}</td>
+                        <td>
+                            {% if lead.push_status == 'success' %}
+                            <span class="badge badge-success">已推送</span>
+                            {% elif lead.push_status == 'fail' %}
+                            <span class="badge badge-fail">失败</span>
+                            {% else %}
+                            <span class="badge badge-pending">待推送</span>
+                            {% endif %}
+                        </td>
+                        <td style="color:#94a3b8;">{{ lead.created_at.strftime('%m-%d %H:%M') if lead.created_at else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-inbox"></i>
+                <p>暂无线索数据</p>
+                <a href="/leads/add" class="btn btn-sm btn-push">新增线索</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card-panel">
+            <h6 class="mb-3 fw-bold">快捷操作</h6>
+            <div class="d-grid gap-2">
+                <a href="/leads/add" class="btn btn-push"><i class="bi bi-plus-circle me-2"></i>新增线索</a>
+                <a href="/leads" class="btn btn-outline-primary"><i class="bi bi-list-ul me-2"></i>线索列表</a>
+                <a href="/push-log" class="btn btn-outline-secondary"><i class="bi bi-clock-history me-2"></i>推送记录</a>
+            </div>
+        </div>
+
+        <div class="card-panel mt-4">
+            <h6 class="mb-3 fw-bold">接口状态</h6>
+            <div class="d-flex align-items-center mb-2">
+                <span class="badge bg-success me-2" style="width:8px;height:8px;padding:0;border-radius:50%;"></span>
+                <span style="font-size:13px;">快手 Webhook 接收</span>
+                <span class="ms-auto" style="font-size:12px;color:#94a3b8;">就绪</span>
+            </div>
+            <div class="d-flex align-items-center">
+                <span class="badge bg-success me-2" style="width:8px;height:8px;padding:0;border-radius:50%;"></span>
+                <span style="font-size:13px;">奇瑞 SCRM 推送</span>
+                <span class="ms-auto" style="font-size:12px;color:#94a3b8;">就绪</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

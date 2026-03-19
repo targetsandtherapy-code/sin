@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑' if lead else '新增' }}线索{% endblock %}
+{% block page_title %}{{ '编辑' if lead else '新增' }}线索{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card-panel">
+            <form method="post" action="{{ '/leads/' ~ lead.id ~ '/edit' if lead else '/leads/add' }}">
+                <h6 class="fw-bold mb-3"><i class="bi bi-person me-2"></i>基本信息</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label">线索ID <span class="text-danger">*</span></label>
+                        <input type="text" name="lead_id" class="form-control form-control-sm" 
+                               value="{{ lead.lead_id if lead else '' }}" placeholder="渠道原始线索ID" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">姓名</label>
+                        <input type="text" name="name" class="form-control form-control-sm" 
+                               value="{{ lead.name if lead else '' }}" placeholder="客户姓名">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">手机号码 <span class="text-danger">*</span></label>
+                        <input type="text" name="tel_phone" class="form-control form-control-sm" 
+                               value="{{ lead.tel_phone if lead else '' }}" placeholder="11位手机号" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">性别</label>
+                        <select name="gender" class="form-select form-select-sm">
+                            <option value="0" {{ 'selected' if not lead or lead.gender == '0' }}>未知</option>
+                            <option value="1" {{ 'selected' if lead and lead.gender == '1' }}>男</option>
+                            <option value="2" {{ 'selected' if lead and lead.gender == '2' }}>女</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">线索创建时间</label>
+                        <input type="text" name="create_time" class="form-control form-control-sm" 
+                               value="{{ lead.create_time if lead else '' }}" placeholder="yyyy-MM-dd HH:mm:ss">
+                    </div>
+                </div>
+
+                <h6 class="fw-bold mb-3"><i class="bi bi-geo-alt me-2"></i>地区信息</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label">省份</label>
+                        <input type="text" name="province_name" class="form-control form-control-sm" 
+                               value="{{ lead.province_name if lead else '' }}" placeholder="如：安徽省">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">城市</label>
+                        <input type="text" name="city_name" class="form-control form-control-sm" 
+                               value="{{ lead.city_name if lead else '' }}" placeholder="如：芜湖市">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">区县</label>
+                        <input type="text" name="county_name" class="form-control form-control-sm" 
+                               value="{{ lead.county_name if lead else '' }}" placeholder="如：镜湖区">
+                    </div>
+                </div>
+
+                <h6 class="fw-bold mb-3"><i class="bi bi-tag me-2"></i>来源编码</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label">一级来源 (source1) <span class="text-danger">*</span></label>
+                        <input type="text" name="source1" class="form-control form-control-sm" 
+                               value="{{ lead.source1 if lead else 'A13' }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">二级来源 (source2) <span class="text-danger">*</span></label>
+                        <input type="text" name="source2" class="form-control form-control-sm" 
+                               value="{{ lead.source2 if lead else 'A1304' }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">三级来源 (source3)</label>
+                        <input type="text" name="source3" class="form-control form-control-sm" 
+                               value="{{ lead.source3 if lead else 'A130403' }}">
+                    </div>
+                </div>
+
+                <h6 class="fw-bold mb-3"><i class="bi bi-car-front me-2"></i>车型 / 经销商</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label">经销商ERP (dealerId)</label>
+                        <input type="text" name="dealer_id" class="form-control form-control-sm" 
+                               value="{{ lead.dealer_id if lead else '' }}" placeholder="如：10145">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">车系代码 (seriesId)</label>
+                        <input type="text" name="series_id" class="form-control form-control-sm" 
+                               value="{{ lead.series_id if lead else '' }}" placeholder="如：QR76">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">车系名称 (seriesName)</label>
+                        <input type="text" name="series_name" class="form-control form-control-sm" 
+                               value="{{ lead.series_name if lead else '' }}" placeholder="如：2025款艾瑞泽8">
+                    </div>
+                </div>
+
+                <hr>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-push"><i class="bi bi-check2 me-1"></i>{{ '保存修改' if lead else '添加线索' }}</button>
+                    <a href="/leads" class="btn btn-outline-secondary">取消</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card-panel">
+            <h6 class="fw-bold mb-3">字段说明</h6>
+            <div style="font-size:12px;color:#64748b;line-height:2;">
+                <p><strong>线索ID</strong>：渠道原始ID，不可重复</p>
+                <p><strong>source1/2/3</strong>：来源编码，默认 A13/A1304/A130403</p>
+                <p><strong>dealerId</strong>：经销商整车ERP号，留空则通过省市县分配</p>
+                <p><strong>seriesId</strong>：车型配置表中的代码，如 QR76</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
