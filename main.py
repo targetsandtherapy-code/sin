@@ -16,8 +16,13 @@ from database import init_db, SessionLocal, Lead, PushLog
 
 app = FastAPI(title="SCRM 线索管理系统")
 app.add_middleware(SessionMiddleware, secret_key="scrm-leads-secret-key-2026")
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates")
+os.makedirs(STATIC_DIR, exist_ok=True)
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+templates = Jinja2Templates(directory=TEMPLATE_DIR)
 
 init_db()
 
