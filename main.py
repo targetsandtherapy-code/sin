@@ -69,6 +69,13 @@ def tpl(request, name, page, **ctx):
     return templates.TemplateResponse(name, ctx)
 
 
+# ─── 健康检查 ───
+
+@app.head("/")
+def health_check():
+    return JSONResponse({"status": "ok"})
+
+
 # ─── 页面路由 ───
 
 @app.get("/", response_class=HTMLResponse)
