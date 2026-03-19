@@ -209,20 +209,13 @@ async function confirmPush() {
 
 function pushOne(id) {
     const env = getCurrentEnv();
-    const envName = env === 'prod' ? '正式环境' : '测试环境';
-    if (!confirm(`确定将该线索推送到【${envName}】？`)) return;
-
     fetch('/api/push', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ids: [id], env: env})
     }).then(r => r.json()).then(d => {
-        if (d.success) {
-            alert(`推送完成：成功 ${d.success_count} 条，失败 ${d.fail_count} 条`);
-            location.reload();
-        } else {
-            alert('推送失败：' + d.message);
-        }
+        if (d.success) location.reload();
+        else alert('推送失败：' + d.message);
     }).catch(e => alert('请求失败：' + e.message));
 }
 
