@@ -5,3 +5,4 @@ sqlalchemy
 aiosqlite
 python-multipart
 requests
+itsdangerous
