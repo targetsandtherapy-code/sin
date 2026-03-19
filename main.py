@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from database import init_db, SessionLocal, Lead, PushLog
+from database import init_db, SessionLocal, Lead, PushLog, User, LeadHistory
 
 app = FastAPI(title="SCRM 线索管理系统")
 app.add_middleware(SessionMiddleware, secret_key="scrm-leads-secret-key-2026")
@@ -25,6 +25,15 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
 
 init_db()
+
+# ─── 初始化超级管理员 ───
+
+with SessionLocal() as db:
+    if not db.query(User).filter(User.role == "admin").first():
+        admin = User(username="admin", display_name="超级管理员", role="admin")
+        admin.set_password("admin123")
+        db.add(admin)
+        db.commit()
 
 # ─── 配置 ───
 
@@ -58,15 +67,65 @@ def flash(request, msg, cat="info"):
 
 
 def get_flashed_messages(request):
-    msgs = request.session.pop("_messages", [])
-    return msgs
+    return request.session.pop("_messages", [])
+
+
+def get_current_user(request):
+    uid = request.session.get("user_id")
+    if not uid:
+        return None
+    with get_db() as db:
+        return db.query(User).filter(User.id == uid).first()
+
+
+def get_operator(request):
+    return request.session.get("display_name") or request.session.get("username") or "system"
 
 
 def tpl(request, name, page, **ctx):
     ctx["request"] = request
     ctx["page"] = page
+    ctx["current_user"] = get_current_user(request)
     ctx["get_flashed_messages"] = lambda with_categories=False: get_flashed_messages(request)
     return templates.TemplateResponse(name, ctx)
+
+
+def require_login(request):
+    if not request.session.get("user_id"):
+        return RedirectResponse("/login", status_code=303)
+    return None
+
+
+def require_admin(request):
+    r = require_login(request)
+    if r:
+        return r
+    user = get_current_user(request)
+    if not user or user.role != "admin":
+        return RedirectResponse("/", status_code=303)
+    return None
+
+
+def log_action(db, lead_id, action, operator, field_name="", old_value="", new_value=""):
+    db.add(LeadHistory(
+        lead_id=str(lead_id), action=action, operator=operator,
+        field_name=field_name, old_value=str(old_value), new_value=str(new_value),
+    ))
+
+
+def log_lead_changes(db, lead, new_data, operator):
+    """比较并记录字段变更"""
+    field_map = {
+        "lead_id": "线索ID", "name": "姓名", "tel_phone": "电话", "gender": "性别",
+        "create_time": "创建时间", "source1": "source1", "source2": "source2", "source3": "source3",
+        "dealer_id": "经销商", "series_id": "车系代码", "series_name": "车系名称",
+        "province_name": "省份", "city_name": "城市", "county_name": "区县",
+    }
+    for attr, label in field_map.items():
+        old_val = getattr(lead, attr, "") or ""
+        new_val = new_data.get(attr, "") or ""
+        if str(old_val) != str(new_val):
+            log_action(db, lead.lead_id, "edit", operator, label, old_val, new_val)
 
 
 # ─── 健康检查 ───
@@ -76,10 +135,62 @@ def health_check():
     return JSONResponse({"status": "ok"})
 
 
+# ─── 登录注册 ───
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request, "mode": "login", "error": None, "success": None})
+
+
+@app.post("/login")
+def login_post(request: Request, username: str = Form(...), password: str = Form(...)):
+    with get_db() as db:
+        user = db.query(User).filter(User.username == username).first()
+        if user and user.check_password(password):
+            request.session["user_id"] = user.id
+            request.session["username"] = user.username
+            request.session["display_name"] = user.display_name or user.username
+            request.session["role"] = user.role
+            return RedirectResponse("/", status_code=303)
+    return templates.TemplateResponse("login.html", {"request": request, "mode": "login", "error": "用户名或密码错误", "success": None})
+
+
+@app.get("/register", response_class=HTMLResponse)
+def register_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request, "mode": "register", "error": None, "success": None})
+
+
+@app.post("/register")
+def register_post(request: Request, username: str = Form(...), password: str = Form(...),
+                  password2: str = Form(...), display_name: str = Form(default="")):
+    if len(username) < 3:
+        return templates.TemplateResponse("login.html", {"request": request, "mode": "register", "error": "用户名至少3位", "success": None})
+    if len(password) < 6:
+        return templates.TemplateResponse("login.html", {"request": request, "mode": "register", "error": "密码至少6位", "success": None})
+    if password != password2:
+        return templates.TemplateResponse("login.html", {"request": request, "mode": "register", "error": "两次密码不一致", "success": None})
+    with get_db() as db:
+        if db.query(User).filter(User.username == username).first():
+            return templates.TemplateResponse("login.html", {"request": request, "mode": "register", "error": "用户名已存在", "success": None})
+        user = User(username=username, display_name=display_name or username)
+        user.set_password(password)
+        db.add(user)
+        db.commit()
+    return templates.TemplateResponse("login.html", {"request": request, "mode": "login", "error": None, "success": "注册成功，请登录"})
+
+
+@app.get("/logout")
+def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse("/login", status_code=303)
+
+
 # ─── 页面路由 ───
 
 @app.get("/", response_class=HTMLResponse)
 def dashboard(request: Request):
+    r = require_login(request)
+    if r: return r
     with get_db() as db:
         total = db.query(Lead).count()
         pending = db.query(Lead).filter(Lead.push_status == "pending").count()
@@ -96,6 +207,8 @@ def leads_list(request: Request,
                status: str = Query(default=None),
                source: str = Query(default=None),
                page: int = Query(default=1)):
+    r = require_login(request)
+    if r: return r
     per_page = 20
     with get_db() as db:
         query = db.query(Lead)
@@ -119,6 +232,8 @@ def leads_list(request: Request,
 
 @app.get("/leads/add", response_class=HTMLResponse)
 def lead_add_page(request: Request):
+    r = require_login(request)
+    if r: return r
     return tpl(request, "lead_form.html", "lead_add", lead=None)
 
 
@@ -133,6 +248,7 @@ def lead_add(request: Request,
              series_name: str = Form(default=""),
              province_name: str = Form(default=""), city_name: str = Form(default=""),
              county_name: str = Form(default="")):
+    operator = get_operator(request)
     with get_db() as db:
         existing = db.query(Lead).filter(Lead.lead_id == lead_id).first()
         if existing:
@@ -145,9 +261,10 @@ def lead_add(request: Request,
             source1=source1, source2=source2, source3=source3,
             dealer_id=dealer_id, series_id=series_id, series_name=series_name,
             province_name=province_name, city_name=city_name, county_name=county_name,
-            source_channel="手动录入",
+            source_channel="手动录入", updated_by=operator,
         )
         db.add(lead)
+        log_action(db, lead_id, "create", operator, "新增线索", "", f"{name} {tel_phone}")
         db.commit()
     flash(request, "线索添加成功", "success")
     return RedirectResponse("/leads", status_code=303)
@@ -155,6 +272,8 @@ def lead_add(request: Request,
 
 @app.get("/leads/{lid}/edit", response_class=HTMLResponse)
 def lead_edit_page(request: Request, lid: int):
+    r = require_login(request)
+    if r: return r
     with get_db() as db:
         lead = db.query(Lead).filter(Lead.id == lid).first()
     if not lead:
@@ -174,25 +293,20 @@ def lead_edit(request: Request, lid: int,
               series_name: str = Form(default=""),
               province_name: str = Form(default=""), city_name: str = Form(default=""),
               county_name: str = Form(default="")):
+    operator = get_operator(request)
+    new_data = dict(lead_id=lead_id, name=name, tel_phone=tel_phone, gender=gender,
+                    create_time=create_time, source1=source1, source2=source2, source3=source3,
+                    dealer_id=dealer_id, series_id=series_id, series_name=series_name,
+                    province_name=province_name, city_name=city_name, county_name=county_name)
     with get_db() as db:
         lead = db.query(Lead).filter(Lead.id == lid).first()
         if not lead:
             flash(request, "线索不存在", "error")
             return RedirectResponse("/leads", status_code=303)
-        lead.lead_id = lead_id
-        lead.name = name
-        lead.tel_phone = tel_phone
-        lead.gender = gender
-        lead.create_time = create_time
-        lead.source1 = source1
-        lead.source2 = source2
-        lead.source3 = source3
-        lead.dealer_id = dealer_id
-        lead.series_id = series_id
-        lead.series_name = series_name
-        lead.province_name = province_name
-        lead.city_name = city_name
-        lead.county_name = county_name
+        log_lead_changes(db, lead, new_data, operator)
+        for k, v in new_data.items():
+            setattr(lead, k, v)
+        lead.updated_by = operator
         db.commit()
     flash(request, "线索已更新", "success")
     return RedirectResponse("/leads", status_code=303)
@@ -200,6 +314,8 @@ def lead_edit(request: Request, lid: int,
 
 @app.get("/push-log", response_class=HTMLResponse)
 def push_log_page(request: Request):
+    r = require_login(request)
+    if r: return r
     with get_db() as db:
         logs = db.query(PushLog).order_by(PushLog.pushed_at.desc()).limit(200).all()
     return tpl(request, "push_log.html", "push_log", logs=logs)
@@ -207,6 +323,8 @@ def push_log_page(request: Request):
 
 @app.get("/settings", response_class=HTMLResponse)
 def settings_page(request: Request):
+    r = require_login(request)
+    if r: return r
     webhook_url = str(request.base_url).rstrip("/") + "/api/webhook/kuaishou"
     return tpl(request, "settings.html", "settings", config=CONFIG, webhook_url=webhook_url)
 
@@ -216,22 +334,59 @@ def settings_save(request: Request,
                   app_id: str = Form(...), app_secret: str = Form(...),
                   source1: str = Form(default="A13"), source2: str = Form(default="A1304"),
                   source3: str = Form(default="A130403")):
+    operator = get_operator(request)
     CONFIG["app_id"] = app_id
     CONFIG["app_secret"] = app_secret
     CONFIG["source1"] = source1
     CONFIG["source2"] = source2
     CONFIG["source3"] = source3
+    with get_db() as db:
+        log_action(db, "-", "config", operator, "系统设置", "", "更新API配置")
+        db.commit()
     flash(request, "配置已保存", "success")
     return RedirectResponse("/settings", status_code=303)
+
+
+# ─── 超管：操作记录 ───
+
+@app.get("/admin/logs", response_class=HTMLResponse)
+def admin_logs_page(request: Request, q: str = Query(default=None), page: int = Query(default=1)):
+    r = require_admin(request)
+    if r: return r
+    per_page = 30
+    with get_db() as db:
+        query = db.query(LeadHistory)
+        if q:
+            query = query.filter(
+                (LeadHistory.operator.contains(q)) |
+                (LeadHistory.lead_id.contains(q)) |
+                (LeadHistory.action.contains(q))
+            )
+        total = query.count()
+        total_pages = max(1, (total + per_page - 1) // per_page)
+        logs = query.order_by(LeadHistory.created_at.desc()).offset((page - 1) * per_page).limit(per_page).all()
+    return tpl(request, "admin_logs.html", "admin_logs",
+               logs=logs, total=total, current_page=page, total_pages=total_pages, q=q)
+
+
+@app.get("/admin/users", response_class=HTMLResponse)
+def admin_users_page(request: Request):
+    r = require_admin(request)
+    if r: return r
+    with get_db() as db:
+        users = db.query(User).order_by(User.created_at.desc()).all()
+    return tpl(request, "admin_users.html", "admin_users", users=users)
 
 
 # ─── API 接口 ───
 
 @app.delete("/api/leads/{lid}")
-def api_delete_lead(lid: int):
+async def api_delete_lead(request: Request, lid: int):
+    operator = get_operator(request)
     with get_db() as db:
         lead = db.query(Lead).filter(Lead.id == lid).first()
         if lead:
+            log_action(db, lead.lead_id, "delete", operator, "删除线索", f"{lead.name} {lead.tel_phone}", "")
             db.delete(lead)
             db.commit()
             return {"success": True}
@@ -243,6 +398,7 @@ async def api_push(request: Request):
     body = await request.json()
     ids = body.get("ids", [])
     env = body.get("env", "test")
+    operator = get_operator(request)
 
     if not ids:
         return JSONResponse({"success": False, "message": "未选择线索"})
@@ -282,11 +438,12 @@ async def api_push(request: Request):
                 code = str(result.get("code", ""))
                 msg = result.get("msg", "")
 
-                log = PushLog(
+                db.add(PushLog(
                     lead_id=lead.lead_id, tel_phone=lead.tel_phone, name=lead.name,
-                    environment=env_label, result_code=code, result_msg=msg,
-                )
-                db.add(log)
+                    environment=env_label, result_code=code, result_msg=msg, pushed_by=operator,
+                ))
+                log_action(db, lead.lead_id, "push", operator, "推送线索",
+                           "", f"{env_label} code={code} {msg}")
 
                 if code == "0":
                     lead.push_status = "success"
@@ -304,7 +461,7 @@ async def api_push(request: Request):
                 fail_count += 1
                 db.add(PushLog(
                     lead_id=lead.lead_id, tel_phone=lead.tel_phone, name=lead.name,
-                    environment=env_label, result_code="error", result_msg=str(e),
+                    environment=env_label, result_code="error", result_msg=str(e), pushed_by=operator,
                 ))
 
             time.sleep(random.uniform(0.5, 2.0))
@@ -316,7 +473,6 @@ async def api_push(request: Request):
 
 @app.post("/api/webhook/kuaishou")
 async def webhook_kuaishou(request: Request):
-    """快手线索推送 Webhook 接收接口"""
     try:
         body = await request.json()
     except Exception:
@@ -354,20 +510,15 @@ async def webhook_kuaishou(request: Request):
                     or item.get("intention_city_name") or "")
 
             lead = Lead(
-                lead_id=str(lead_id),
-                name=name,
-                tel_phone=str(phone),
-                gender=str(item.get("gender", "0")),
-                create_time=create_time,
-                source1=CONFIG["source1"],
-                source2=CONFIG["source2"],
-                source3=CONFIG["source3"],
-                province_name=province,
-                city_name=city,
+                lead_id=str(lead_id), name=name, tel_phone=str(phone),
+                gender=str(item.get("gender", "0")), create_time=create_time,
+                source1=CONFIG["source1"], source2=CONFIG["source2"], source3=CONFIG["source3"],
+                province_name=province, city_name=city,
                 county_name=item.get("countyName") or item.get("county_name") or "",
                 source_channel="快手",
             )
             db.add(lead)
+            log_action(db, lead_id, "receive", "快手Webhook", "接收线索", "", f"{name} {phone}")
             count += 1
 
         db.commit()

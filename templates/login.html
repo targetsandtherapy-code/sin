@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - SCRM 线索管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            font-family: "Microsoft YaHei UI", "PingFang SC", sans-serif;
+        }
+        .auth-card {
+            background: #fff; border-radius: 16px; padding: 40px;
+            width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .auth-card .brand {
+            text-align: center; margin-bottom: 32px;
+        }
+        .auth-card .brand h3 { font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+        .auth-card .brand p { color: #94a3b8; font-size: 14px; }
+        .auth-card .form-control { font-size: 15px; padding: 10px 14px; }
+        .auth-card .form-label { font-size: 14px; font-weight: 500; }
+        .auth-card .btn-primary {
+            background: #2563eb; border: none; font-size: 15px;
+            padding: 10px; font-weight: 600;
+        }
+        .auth-card .btn-primary:hover { background: #1d4ed8; }
+        .tab-switch {
+            display: flex; gap: 0; margin-bottom: 24px; border-radius: 8px;
+            overflow: hidden; border: 1px solid #e2e8f0;
+        }
+        .tab-switch a {
+            flex: 1; text-align: center; padding: 10px; font-size: 15px;
+            text-decoration: none; color: #64748b; font-weight: 500;
+            transition: all .15s;
+        }
+        .tab-switch a.active { background: #2563eb; color: #fff; }
+        .tab-switch a:not(.active):hover { background: #f1f5f9; }
+    </style>
+</head>
+<body>
+<div class="auth-card">
+    <div class="brand">
+        <h3><i class="bi bi-diagram-3" style="color:#2563eb;"></i> SCRM 线索系统</h3>
+        <p>千城数智 · 线索管理平台</p>
+    </div>
+
+    <div class="tab-switch">
+        <a href="/login" class="{{ 'active' if mode == 'login' }}">登录</a>
+        <a href="/register" class="{{ 'active' if mode == 'register' }}">注册</a>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger py-2" style="font-size:14px;">{{ error }}</div>
+    {% endif %}
+    {% if success %}
+    <div class="alert alert-success py-2" style="font-size:14px;">{{ success }}</div>
+    {% endif %}
+
+    {% if mode == 'login' %}
+    <form method="post" action="/login">
+        <div class="mb-3">
+            <label class="form-label">用户名</label>
+            <input type="text" name="username" class="form-control" placeholder="请输入用户名" required autofocus>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">密码</label>
+            <input type="password" name="password" class="form-control" placeholder="请输入密码" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">登录</button>
+    </form>
+    {% else %}
+    <form method="post" action="/register">
+        <div class="mb-3">
+            <label class="form-label">用户名</label>
+            <input type="text" name="username" class="form-control" placeholder="3-20位字母数字" required autofocus>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">显示名称</label>
+            <input type="text" name="display_name" class="form-control" placeholder="中文姓名或昵称">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">密码</label>
+            <input type="password" name="password" class="form-control" placeholder="至少6位" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">确认密码</label>
+            <input type="password" name="password2" class="form-control" placeholder="再次输入密码" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">注册</button>
+    </form>
+    {% endif %}
+</div>
+</body>
+</html>

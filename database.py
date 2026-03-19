@@ -1,3 +1,5 @@
+import hashlib
+import os
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
@@ -7,6 +9,28 @@ DATABASE_URL = "sqlite:///./leads.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(64), unique=True, index=True)
+    password_hash = Column(String(128))
+    display_name = Column(String(64), default="")
+    role = Column(String(16), default="user")
+    created_at = Column(DateTime, default=datetime.now)
+
+    def set_password(self, raw):
+        salt = os.urandom(8).hex()
+        h = hashlib.sha256((salt + raw).encode()).hexdigest()
+        self.password_hash = f"{salt}${h}"
+
+    def check_password(self, raw):
+        if not self.password_hash or "$" not in self.password_hash:
+            return False
+        salt, h = self.password_hash.split("$", 1)
+        return hashlib.sha256((salt + raw).encode()).hexdigest() == h
 
 
 class Lead(Base):
@@ -32,6 +56,7 @@ class Lead(Base):
     push_msg = Column(Text, default="")
     push_time = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.now)
+    updated_by = Column(String(64), default="")
 
     def to_api_dict(self):
         d = {}
@@ -75,7 +100,21 @@ class PushLog(Base):
     environment = Column(String(16), default="测试环境")
     result_code = Column(String(16), default="")
     result_msg = Column(Text, default="")
+    pushed_by = Column(String(64), default="")
     pushed_at = Column(DateTime, default=datetime.now)
+
+
+class LeadHistory(Base):
+    __tablename__ = "lead_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    lead_id = Column(String(128), index=True)
+    action = Column(String(16))
+    field_name = Column(String(32), default="")
+    old_value = Column(Text, default="")
+    new_value = Column(Text, default="")
+    operator = Column(String(64), default="")
+    created_at = Column(DateTime, default=datetime.now)
 
 
 def init_db():

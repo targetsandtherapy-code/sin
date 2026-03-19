@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}操作记录{% endblock %}
+{% block page_title %}操作记录{% endblock %}
+
+{% block content %}
+<div class="card-panel mb-4">
+    <form method="get" action="/admin/logs" class="row g-2 align-items-end">
+        <div class="col-auto">
+            <input type="text" name="q" class="form-control form-control-sm" placeholder="搜索操作人/线索ID/操作类型" value="{{ q or '' }}" style="width:280px;">
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search me-1"></i>搜索</button>
+            <a href="/admin/logs" class="btn btn-sm btn-outline-secondary ms-1">重置</a>
+        </div>
+        <div class="col-auto ms-auto" style="color:#94a3b8;">共 {{ total }} 条记录</div>
+    </form>
+</div>
+
+<div class="card-panel">
+    {% if logs %}
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead><tr>
+                <th style="width:50px;">#</th>
+                <th>操作人</th>
+                <th>操作</th>
+                <th>线索ID</th>
+                <th>字段</th>
+                <th>旧值</th>
+                <th>新值</th>
+                <th>时间</th>
+            </tr></thead>
+            <tbody>
+            {% for log in logs %}
+            <tr>
+                <td style="color:#94a3b8;">{{ log.id }}</td>
+                <td><strong>{{ log.operator }}</strong></td>
+                <td>
+                    {% if log.action == 'create' %}
+                    <span class="badge" style="background:#dbeafe;color:#1d4ed8;">新增</span>
+                    {% elif log.action == 'edit' %}
+                    <span class="badge" style="background:#fef3c7;color:#92400e;">编辑</span>
+                    {% elif log.action == 'delete' %}
+                    <span class="badge" style="background:#fee2e2;color:#991b1b;">删除</span>
+                    {% elif log.action == 'push' %}
+                    <span class="badge" style="background:#d1fae5;color:#065f46;">推送</span>
+                    {% elif log.action == 'receive' %}
+                    <span class="badge" style="background:#e0e7ff;color:#3730a3;">接收</span>
+                    {% elif log.action == 'config' %}
+                    <span class="badge" style="background:#f3e8ff;color:#6b21a8;">配置</span>
+                    {% else %}
+                    <span class="badge bg-secondary">{{ log.action }}</span>
+                    {% endif %}
+                </td>
+                <td><code style="font-size:12px;">{{ log.lead_id }}</code></td>
+                <td>{{ log.field_name }}</td>
+                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#94a3b8;" title="{{ log.old_value }}">{{ log.old_value or '-' }}</td>
+                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ log.new_value }}">{{ log.new_value or '-' }}</td>
+                <td style="color:#94a3b8;white-space:nowrap;">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '-' }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if total_pages > 1 %}
+    <div class="d-flex justify-content-end mt-3">
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {{ 'active' if p == current_page }}">
+                    <a class="page-link" href="?page={{ p }}&q={{ q or '' }}">{{ p }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-journal-text"></i>
+        <p>暂无操作记录</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
