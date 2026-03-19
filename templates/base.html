@@ -21,8 +21,8 @@
         .sidebar .brand i { color: #60a5fa; margin-right: 8px; }
         .sidebar .nav-menu { flex: 1; padding: 12px 0; }
         .sidebar .nav-item {
-            display: flex; align-items: center; padding: 11px 24px;
-            color: #94a3b8; text-decoration: none; font-size: 14px;
+            display: flex; align-items: center; padding: 12px 24px;
+            color: #94a3b8; text-decoration: none; font-size: 15px;
             transition: all .15s;
         }
         .sidebar .nav-item:hover { color: #fff; background: rgba(255,255,255,0.06); }
@@ -33,31 +33,37 @@
             background: #fff; border-bottom: 1px solid #e2e8f0;
             padding: 12px 32px; display: flex; align-items: center; justify-content: space-between;
         }
-        .top-bar h5 { margin: 0; font-weight: 600; font-size: 16px; }
-        .page-body { padding: 24px 32px; }
+        .top-bar h5 { margin: 0; font-weight: 600; font-size: 18px; }
+        .page-body { padding: 28px 32px; }
         .stat-card {
-            background: #fff; border-radius: 12px; padding: 20px 24px;
+            background: #fff; border-radius: 12px; padding: 22px 26px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
         .stat-card .stat-icon {
-            width: 44px; height: 44px; border-radius: 10px;
-            display: flex; align-items: center; justify-content: center; font-size: 20px;
+            width: 48px; height: 48px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; font-size: 22px;
         }
-        .stat-card .stat-value { font-size: 28px; font-weight: 700; }
-        .stat-card .stat-label { font-size: 13px; color: #64748b; }
+        .stat-card .stat-value { font-size: 32px; font-weight: 700; }
+        .stat-card .stat-label { font-size: 14px; color: #64748b; margin-top: 2px; }
         .card-panel {
             background: #fff; border-radius: 12px; padding: 24px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
-        .table th { font-weight: 600; font-size: 13px; color: #64748b; white-space: nowrap; }
-        .table td { font-size: 13px; vertical-align: middle; }
+        .table th { font-weight: 600; font-size: 14px; color: #475569; white-space: nowrap; padding: 12px 10px; }
+        .table td { font-size: 14px; vertical-align: middle; padding: 12px 10px; }
+        .table td code { font-size: 14px; }
+        .badge { font-size: 13px; padding: 4px 10px; }
         .badge-pending { background: #fef3c7; color: #92400e; }
         .badge-success { background: #d1fae5; color: #065f46; }
         .badge-fail { background: #fee2e2; color: #991b1b; }
         .btn-push { background: #2563eb; color: #fff; border: none; }
         .btn-push:hover { background: #1d4ed8; color: #fff; }
+        .form-control, .form-select { font-size: 14px; }
+        .form-label { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+        .btn { font-size: 14px; }
         .empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
-        .empty-state i { font-size: 48px; margin-bottom: 16px; }
+        .empty-state i { font-size: 52px; margin-bottom: 16px; }
+        .empty-state p { font-size: 15px; }
     </style>
     {% block extra_css %}{% endblock %}
 </head>

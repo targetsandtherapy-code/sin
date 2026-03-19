@@ -74,7 +74,7 @@
                     <span class="badge badge-pending">待推送</span>
                     {% endif %}
                 </td>
-                <td style="color:#94a3b8;font-size:12px;">{{ lead.created_at.strftime('%m-%d %H:%M') if lead.created_at else '-' }}</td>
+                <td style="color:#94a3b8;">{{ lead.created_at.strftime('%m-%d %H:%M') if lead.created_at else '-' }}</td>
                 <td>
                     <div class="btn-group btn-group-sm">
                         <a href="/leads/{{ lead.id }}/edit" class="btn btn-outline-secondary btn-sm" title="编辑"><i class="bi bi-pencil"></i></a>

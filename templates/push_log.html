@@ -21,7 +21,7 @@
             {% for log in logs %}
             <tr>
                 <td style="color:#94a3b8;">{{ log.id }}</td>
-                <td><code style="font-size:11px;">{{ log.lead_id }}</code></td>
+                <td><code>{{ log.lead_id }}</code></td>
                 <td>{{ log.name or '-' }}</td>
                 <td><code>{{ log.tel_phone }}</code></td>
                 <td>
@@ -41,7 +41,7 @@
                 <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ log.result_msg }}">
                     {{ log.result_msg }}
                 </td>
-                <td style="color:#94a3b8;font-size:12px;">{{ log.pushed_at.strftime('%Y-%m-%d %H:%M:%S') if log.pushed_at else '-' }}</td>
+                <td style="color:#94a3b8;">{{ log.pushed_at.strftime('%Y-%m-%d %H:%M:%S') if log.pushed_at else '-' }}</td>
             </tr>
             {% endfor %}
             </tbody>
