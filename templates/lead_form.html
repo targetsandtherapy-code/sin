@@ -188,24 +188,30 @@ const citySelect = new TomSelect('#sel_city', {
     }
 });
 
-new TomSelect('#sel_dealer', {
+const dealerSelect = new TomSelect('#sel_dealer', {
     valueField: 'value', labelField: 'text', searchField: 'text',
     preload: true,
     load: function(query, callback) {
         fetch('/api/dealers?q=' + encodeURIComponent(query || '')).then(r=>r.json()).then(callback);
+    },
+    onChange: function(val) {
+        modelSelect.clear();
+        modelSelect.clearOptions();
+        const url = val ? '/api/car-models-list?dealer=' + encodeURIComponent(val) : '/api/car-models-list';
+        fetch(url).then(r=>r.json()).then(data => {
+            data.forEach(item => modelSelect.addOption(item));
+            modelSelect.refreshOptions(false);
+        });
     }
 });
 
-let modelsLoaded = false;
 const modelSelect = new TomSelect('#sel_model', {
     valueField: 'value', labelField: 'text', searchField: 'text',
     preload: true,
     load: function(query, callback) {
-        if (modelsLoaded) return callback();
-        fetch('/api/car-models-list').then(r=>r.json()).then(data => {
-            modelsLoaded = true;
-            callback(data);
-        });
+        const dealer = dealerSelect.getValue();
+        const url = dealer ? '/api/car-models-list?dealer=' + encodeURIComponent(dealer) : '/api/car-models-list';
+        fetch(url).then(r=>r.json()).then(callback);
     },
     onChange: function(val) {
         const opt = this.options[val];

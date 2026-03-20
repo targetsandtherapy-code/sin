@@ -126,6 +126,14 @@ class CarModel(Base):
     name = Column(String(64), default="")
 
 
+class DealerModel(Base):
+    __tablename__ = "dealer_models"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    erp_code = Column(String(32), index=True)
+    model_code = Column(String(32), index=True)
+
+
 class LeadHistory(Base):
     __tablename__ = "lead_history"
 

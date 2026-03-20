@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from database import init_db, SessionLocal, Lead, PushLog, User, LeadHistory, Dealer, CarModel
+from database import init_db, SessionLocal, Lead, PushLog, User, LeadHistory, Dealer, CarModel, DealerModel
 
 app = FastAPI(title="SCRM 线索管理系统")
 app.add_middleware(SessionMiddleware, secret_key="scrm-leads-secret-key-2026")
@@ -46,6 +46,9 @@ with SessionLocal() as db:
             db.add(Dealer(**d))
         for m in data.get("models", []):
             db.add(CarModel(**m))
+        for erp, codes in data.get("dealer_models", {}).items():
+            for code in codes:
+                db.add(DealerModel(erp_code=str(erp), model_code=code))
         db.commit()
 
 # ─── 配置 ───
@@ -575,8 +578,13 @@ def api_dealers_list(q: str = Query(default="")):
 
 
 @app.get("/api/car-models-list")
-def api_car_models_list():
+def api_car_models_list(dealer: str = Query(default="")):
     with get_db() as db:
+        if dealer:
+            codes = [r.model_code for r in db.query(DealerModel).filter(DealerModel.erp_code == dealer).all()]
+            if codes:
+                models = db.query(CarModel).filter(CarModel.code.in_(codes)).order_by(CarModel.category, CarModel.code).all()
+                return [{"value": m.code, "text": f"{m.name} ({m.code})", "name": m.name} for m in models]
         models = db.query(CarModel).order_by(CarModel.category, CarModel.code).all()
         return [{"value": m.code, "text": f"{m.name} ({m.code})", "name": m.name} for m in models]
 
