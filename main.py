@@ -255,7 +255,7 @@ def lead_add_page(request: Request):
 
 @app.post("/leads/add")
 def lead_add(request: Request,
-             lead_id: str = Form(default=""), name: str = Form(default=""),
+             lead_id: str = Form(...), name: str = Form(default=""),
              tel_phone: str = Form(...), gender: str = Form(default="0"),
              create_time: str = Form(default=""),
              source_channel: str = Form(default="手动录入"),
@@ -266,8 +266,6 @@ def lead_add(request: Request,
              province_name: str = Form(default=""), city_name: str = Form(default=""),
              county_name: str = Form(default="")):
     operator = get_operator(request)
-    if not lead_id:
-        lead_id = f"manual_{datetime.now().strftime('%Y%m%d%H%M%S')}_{random.randint(1000,9999)}"
     with get_db() as db:
         existing = db.query(Lead).filter(Lead.lead_id == lead_id).first()
         if existing:
@@ -303,7 +301,7 @@ def lead_edit_page(request: Request, lid: int):
 
 @app.post("/leads/{lid}/edit")
 def lead_edit(request: Request, lid: int,
-              lead_id: str = Form(default=""), name: str = Form(default=""),
+              lead_id: str = Form(...), name: str = Form(default=""),
               tel_phone: str = Form(...), gender: str = Form(default="0"),
               create_time: str = Form(default=""),
               source_channel: str = Form(default=""),
