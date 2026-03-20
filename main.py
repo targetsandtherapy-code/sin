@@ -564,15 +564,18 @@ def api_delete_car_model(mid: int):
 # ─── API 接口 ───
 
 @app.get("/api/dealers")
-def api_dealers_list(q: str = Query(default="")):
+def api_dealers_list(q: str = Query(default=""), province: str = Query(default="")):
     with get_db() as db:
         query = db.query(Dealer)
         if q:
             query = query.filter(
                 (Dealer.name.contains(q)) | (Dealer.short_name.contains(q)) |
-                (Dealer.erp_code.contains(q)) | (Dealer.city.contains(q))
+                (Dealer.erp_code.contains(q)) | (Dealer.city.contains(q)) |
+                (Dealer.province.contains(q))
             )
-        dealers = query.order_by(Dealer.province, Dealer.city).limit(50).all()
+        if province:
+            query = query.filter(Dealer.province == province)
+        dealers = query.order_by(Dealer.province, Dealer.city).all()
         return [{"value": d.erp_code, "text": f"{d.short_name} ({d.erp_code}) - {d.province}{d.city}"}
                 for d in dealers]
 
