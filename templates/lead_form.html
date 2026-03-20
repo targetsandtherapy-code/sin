@@ -20,9 +20,12 @@
                 <h6 class="fw-bold mb-3"><i class="bi bi-person me-2"></i>基本信息</h6>
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <label class="form-label">线索ID <span class="text-danger">*</span></label>
-                        <input type="text" name="lead_id" class="form-control form-control-sm"
-                               value="{{ lead.lead_id if lead else '' }}" placeholder="渠道原始线索ID" required>
+                        <label class="form-label">线索来源 <span class="text-danger">*</span></label>
+                        <select name="source_channel" class="form-select form-select-sm">
+                            <option value="快手" {{ 'selected' if lead and lead.source_channel == '快手' }}>快手</option>
+                            <option value="抖音" {{ 'selected' if lead and lead.source_channel == '抖音' }}>抖音</option>
+                            <option value="手动录入" {{ 'selected' if not lead or lead.source_channel == '手动录入' }}>手动录入</option>
+                        </select>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">姓名</label>
@@ -46,6 +49,11 @@
                         <label class="form-label">线索创建时间</label>
                         <input type="text" name="create_time" class="form-control form-control-sm"
                                value="{{ lead.create_time if lead else '' }}" placeholder="yyyy-MM-dd HH:mm:ss">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">线索ID</label>
+                        <input type="text" name="lead_id" class="form-control form-control-sm"
+                               value="{{ lead.lead_id if lead else '' }}" placeholder="留空自动生成">
                     </div>
                 </div>
 
