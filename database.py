@@ -79,8 +79,10 @@ class Lead(Base):
             d["dealerId"] = self.dealer_id
         if self.series_id:
             d["seriesId"] = self.series_id
+            d["specId"] = self.series_id
         if self.series_name:
             d["seriesName"] = self.series_name
+            d["specName"] = self.series_name
         if self.province_name:
             d["provinceName"] = self.province_name
         if self.city_name:
